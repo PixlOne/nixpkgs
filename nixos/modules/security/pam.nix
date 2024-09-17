@@ -369,6 +369,15 @@ let
           '';
         };
 
+        fprintAuthSkipLidClose = lib.mkOption {
+          default = config.services.fprintd.lid.authSkipLidClose;
+          defaultText = lib.literalExpression "config.services.fprintd.authSkipLidClose";
+          type = lib.types.bool;
+          description = ''
+            If set, fprint will not be used if laptop lid closed.
+          '';
+        };
+
         howdy = {
           enable = lib.mkOption {
             default = config.security.pam.howdy.enable;
@@ -1162,6 +1171,16 @@ let
                     args = [
                       dp9ik.authserver
                     ];
+                  }
+                )
+                (
+                  let lid = pkgs.writeShellScript "lid.sh" "${pkgs.gnugrep}/bin/grep -q closed ${config.services.fprintd.lid.path} && exit 1; true"; in
+                  {
+                    name = "fprintd-lid";
+                    enable = cfg.fprintAuthSkipLidClose;
+                    control = "[success=ignore default=1]";
+                    modulePath = "${pkgs.linux-pam}/lib/security/pam_exec.so";
+                    args = [ "quiet" "${lid}" ];
                   }
                 )
                 {
